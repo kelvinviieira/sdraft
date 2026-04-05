@@ -55,7 +55,9 @@ function DroppableColumn({ id, title, color, count, children }: any) {
 }
 
 function DraggableCard({ task, clients, members, openEdit, setDeleteId, onComplete, onAdvance, isOverlay = false }: any) {
-    const isOverdue = task.deadline && !['Concluído'].includes(task.status) && new Date(task.deadline) < new Date(new Date().setHours(0,0,0,0));
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isToday = task.deadline && !['Concluído'].includes(task.status) && task.deadline === todayStr;
+    const isOverdue = task.deadline && !['Concluído'].includes(task.status) && task.deadline < todayStr;
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: task.id,
         data: task
@@ -82,7 +84,7 @@ function DraggableCard({ task, clients, members, openEdit, setDeleteId, onComple
             style={{
             ...style, padding: '8px 10px', borderRadius: 8,
             background: isDone ? '#F0FDF4' : 'white',
-            border: `1px solid ${isOverdue ? '#FCA5A5' : isDone ? '#BBF7D0' : '#E2E8F0'}`,
+            border: `1px solid ${isOverdue ? '#FCA5A5' : isToday ? '#FDE68A' : isDone ? '#BBF7D0' : '#E2E8F0'}`,
             boxShadow: isOverlay ? '0 10px 15px rgba(0,0,0,0.1)' : '0 1px 2px rgba(0,0,0,0.02)',
             display: 'flex', flexDirection: 'column', gap: 4, cursor: isDragging ? 'grabbing' : 'grab',
             zIndex: isOverlay ? 999 : 1, position: 'relative', opacity: isDone ? 0.75 : 1,
@@ -91,6 +93,11 @@ function DraggableCard({ task, clients, members, openEdit, setDeleteId, onComple
             {isOverdue && (
                 <div style={{ position: 'absolute', top: -6, right: 6, background: '#EF4444', color: 'white', padding: '0px 6px', borderRadius: 4, fontSize: 8, fontWeight: 800, zIndex: 10 }}>
                     ATRASADA
+                </div>
+            )}
+            {isToday && (
+                <div style={{ position: 'absolute', top: -6, right: 6, background: '#F59E0B', color: 'white', padding: '0px 6px', borderRadius: 4, fontSize: 8, fontWeight: 800, zIndex: 10 }}>
+                    HOJE
                 </div>
             )}
 
@@ -111,7 +118,7 @@ function DraggableCard({ task, clients, members, openEdit, setDeleteId, onComple
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: '#94A3B8' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 2 }} title="Data Final">
                         <span>📅</span>
-                        <span style={{ color: isOverdue ? '#EF4444' : '#64748B', fontWeight: isOverdue ? 700 : 500 }}>{formatDateBr(task.deadline)}</span>
+                        <span style={{ color: isOverdue ? '#EF4444' : isToday ? '#F59E0B' : '#64748B', fontWeight: isOverdue || isToday ? 700 : 500 }}>{formatDateBr(task.deadline)}</span>
                     </div>
                 </div>
                 <div style={{ transform: 'scale(0.85)', transformOrigin: 'right center' }}>
@@ -208,7 +215,8 @@ export default function TasksBoard({ clientId }: { clientId?: string }) {
                 if (client?.stage !== filterClientStage) return false;
             }
             if (showOverdueOnly) {
-                const isOverdue = t.deadline && !['Concluído'].includes(t.status) && new Date(t.deadline) < new Date(new Date().setHours(0,0,0,0));
+                const td = new Date().toISOString().split('T')[0];
+                const isOverdue = t.deadline && !['Concluído'].includes(t.status) && t.deadline < td;
                 if (!isOverdue) return false;
             }
             if (hideCompleted && t.status === 'Concluído') return false;
@@ -479,14 +487,17 @@ export default function TasksBoard({ clientId }: { clientId?: string }) {
                                 const client = clients.find(c => c.id === task.clientId);
                                 const assignee = members.find(m => m.id === task.assigneeId);
                                 const statusCol = COLUMNS.find(c => c.status === task.status);
-                                const isOverdue = task.deadline && !['Concluído'].includes(task.status) && new Date(task.deadline) < new Date(new Date().setHours(0,0,0,0));
+                                const todayStr = new Date().toISOString().split('T')[0];
+    const isToday = task.deadline && !['Concluído'].includes(task.status) && task.deadline === todayStr;
+    const isOverdue = task.deadline && !['Concluído'].includes(task.status) && task.deadline < todayStr;
                                 return (
                                     <tr key={task.id} 
                                         onClick={() => openEdit(task)}
-                                        style={{ borderBottom: '1px solid #F1F5F9', transition: 'background 0.15s', cursor: 'pointer', background: isOverdue ? '#FFF1F2' : 'white' }}>
+                                        style={{ borderBottom: '1px solid #F1F5F9', transition: 'background 0.15s', cursor: 'pointer', background: isOverdue ? '#FFF1F2' : isToday ? '#FFFBEB' : 'white' }}>
                                          <td style={{ padding: '12px 16px' }}>
                                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                                  {isOverdue && <span title="Atrasada" style={{ color: '#EF4444', fontSize: 12 }}>⚠️</span>}
+                                                 {isToday && <span title="Vence hoje" style={{ color: '#F59E0B', fontSize: 12 }}>📅</span>}
                                                  <button
                                                      onClick={e => { e.stopPropagation(); handleComplete(task); }}
                                                      style={{
